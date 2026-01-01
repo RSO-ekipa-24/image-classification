@@ -1,0 +1,12 @@
+fastapi
+uvicorn[standard]
+google-cloud-storage
+numpy
+fastapi-keycloak-auth
+httpx
+python-jose[cryptography]
+torch --index-url https://download.pytorch.org/whl/cpu
+torchvision --index-url https://download.pytorch.org/whl/cpu
+transformers
+Pillow
+python-keycloak
