@@ -1,0 +1,97 @@
+
+name: CI/CD Pipeline for Files service
+
+permissions:
+  contents: 'read'
+  id-token: 'write'
+
+on:
+  pull_request:
+    branches: [ dev ] # TODO: Add main later, if or when we configure prod
+  push:
+    branches: [ dev ] # TODO: Add main later, if or when we configure prod
+
+env:
+  PROJECT_ID: 'artful-reactor-351917'
+  GAR_LOCATION: 'europe-central2'
+
+  DEV_CLUSTER: 'essa-cluster'
+  DEV_ZONE: 'europe-central2'
+
+  # we don't have that rn
+  PROD_CLUSTER: 'essa-cluster'
+  PROD_ZONE: 'europe-central2'
+
+  DEPLOYMENT_NAME: image-classification-release
+  REPOSITORY: 'essa-images'
+  IMAGE: 'image-classification-service'
+
+jobs:
+  docker-build-push:
+
+    name: Build Docker & Push
+    runs-on: ubuntu-latest
+
+    # Only trigger this job if we are pushing / merging the code to specified branches
+    if: github.event_name == 'push'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download Quarkus app
+        uses: actions/download-artifact@v4
+
+      - id: auth
+        name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: 'projects/881557273122/locations/global/workloadIdentityPools/github-actions-pool/providers/github-actions-provider'
+          service_account: github-actions-account@artful-reactor-351917.iam.gserviceaccount.com
+
+      - name: Configure Docker for GAR
+        run: |
+          gcloud auth configure-docker ${{ env.GAR_LOCATION }}-docker.pkg.dev --quiet
+
+      - name: Build & Push Docker Image
+        run: |
+          IMAGE_TAG="${GAR_LOCATION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/${IMAGE}:${GITHUB_SHA}"
+          docker build \
+            -f Dockerfile \
+            --tag "$IMAGE_TAG" \
+            --build-arg GITHUB_SHA="${GITHUB_SHA}" \
+            .
+
+          docker push "$IMAGE_TAG"
+
+  deploy-dev:
+    name: Deploy to DEV (Helm)
+    needs: docker-build-push
+    runs-on: ubuntu-latest
+
+    # This job will only run when a commit is pushed to the dev branch. If you push to main or create a PR from another branch, this job will be skipped
+    if: github.ref == 'refs/heads/dev'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: 'projects/881557273122/locations/global/workloadIdentityPools/github-actions-pool/providers/github-actions-provider'
+          service_account: github-actions-account@artful-reactor-351917.iam.gserviceaccount.com
+
+      - name: Get GKE credentials
+        uses: google-github-actions/get-gke-credentials@v2
+        with:
+          cluster_name: ${{ env.DEV_CLUSTER }}
+          location: ${{ env.DEV_ZONE }}
+
+      - name: Deploy Helm Chart to DEV
+        run: |
+          helm upgrade --install ${{ env.DEPLOYMENT_NAME }} ./deploy/k8s/helm/image-classification-chart \
+            --set deployment.image.repository="${GAR_LOCATION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/${IMAGE}" \
+            --set deployment.image.tag="${GITHUB_SHA}" \
+            --namespace essa-project
+

@@ -1,0 +1,21 @@
+
+service:
+  serviceName: image-classification-service
+  port: 8080
+  targetPort: 8080
+  type: ClusterIP
+
+
+deployment:
+  replicaCount: 1
+  name: image-classification-service
+  image:
+    repository: europe-central2-docker.pkg.dev/artful-reactor-351917/essa-images/image-classification-service
+    tag: "latest"
+    pullPolicy: IfNotPresent
+    containerPort: 8080
+
+secrets:
+  name: image-classification-secrets
+  keycloakClientSecret: KEYCLOAK_CLIENT_SECRET
+  keycloakServiceClientSecret: KEYCLOAK_SERVICE_CLIENT_SECRET
