@@ -1,5 +1,5 @@
 
-name: CI/CD Pipeline for Files service
+name: CI/CD Pipeline for Image Classification service
 
 permissions:
   contents: 'read'
