@@ -7,6 +7,8 @@ from .classify import classify_image_bytes
 from .keycloak_client import KeycloakClient
 import os
 import logging
+from fastapi import Response, status
+import httpx
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -49,3 +51,39 @@ async def classify(
     img_bytes = download_image(request.bucket, request.object_path)
     tags = classify_image_bytes(img_bytes)
     return {"object": request.object_path, "tags": tags, "classified_by": user.preferred_username}
+
+
+
+@app.get("/health", status_code=status.HTTP_200_OK)
+async def liveness():
+    """Confirms the Python process is running."""
+    return {"status": "ok"}
+
+@app.get("/ready")
+async def readiness(response: Response):
+    """Confirms the app has its tags and can reach Keycloak."""
+    is_ready = True
+    details = {}
+
+    # Check 1: Were tags successfully loaded into the global variable?
+    if not tags:
+        is_ready = False
+        details["tags"] = "not_loaded"
+
+    # Check 2: Is Keycloak reachable?
+    try:
+        async with httpx.AsyncClient() as client:
+            # We ping the Keycloak URL defined in your env
+            res = await client.get(os.getenv("KEYCLOAK_URL"), timeout=1.0)
+            if res.status_code >= 400:
+                is_ready = False
+                details["keycloak"] = f"unreachable_status_{res.status_code}"
+    except Exception as e:
+        is_ready = False
+        details["keycloak"] = str(e)
+
+    if not is_ready:
+        response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+        return {"status": "unready", "details": details}
+
+    return {"status": "ready", "tags_count": len(tags)}

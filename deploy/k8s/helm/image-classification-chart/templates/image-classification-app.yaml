@@ -60,3 +60,20 @@ spec:
 
             - name: FILE_SERVICE_TAGS_URL
               value: http://files-service:8080/tag/image-system
+
+          # health checks
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 3
+
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 2
