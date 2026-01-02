@@ -61,29 +61,32 @@ async def liveness():
 
 @app.get("/ready")
 async def readiness(response: Response):
-    """Confirms the app has its tags and can reach Keycloak."""
-    is_ready = True
-    details = {}
+    """Checks if Keycloak, the File Service, and internal tags are all ready."""
+    errors = {}
 
-    # Check 1: Were tags successfully loaded into the global variable?
+    async with httpx.AsyncClient() as client:
+        # 1. Check Keycloak
+        try:
+            kc_res = await client.get(os.getenv("KEYCLOAK_URL"), timeout=1.0)
+            if kc_res.status_code >= 400:
+                errors["keycloak"] = f"unhealthy_status_{kc_res.status_code}"
+        except Exception:
+            errors["keycloak"] = "unreachable"
+
+        # 2. Check File Service (where tags come from)
+        try:
+            tags_res = await client.get(os.getenv("FILE_SERVICE_TAGS_URL"), timeout=1.0)
+            if tags_res.status_code >= 400:
+                errors["file_service"] = f"unhealthy_status_{tags_res.status_code}"
+        except Exception:
+            errors["file_service"] = "unreachable"
+
+    # 3. Check if we actually have tags in memory
     if not tags:
-        is_ready = False
-        details["tags"] = "not_loaded"
+        errors["internal_state"] = "tags_list_empty"
 
-    # Check 2: Is Keycloak reachable?
-    try:
-        async with httpx.AsyncClient() as client:
-            # We ping the Keycloak URL defined in your env
-            res = await client.get(os.getenv("KEYCLOAK_URL"), timeout=1.0)
-            if res.status_code >= 400:
-                is_ready = False
-                details["keycloak"] = f"unreachable_status_{res.status_code}"
-    except Exception as e:
-        is_ready = False
-        details["keycloak"] = str(e)
-
-    if not is_ready:
+    if errors:
         response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
-        return {"status": "unready", "details": details}
+        return {"status": "unready", "errors": errors}
 
-    return {"status": "ready", "tags_count": len(tags)}
+    return {"status": "ready", "tags_loaded": len(tags)}
