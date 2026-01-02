@@ -26,6 +26,9 @@ class KeycloakClient:
         headers = {"Authorization": f"Bearer {token}"}
         
         async with httpx.AsyncClient() as client:
-            response = await client.post(url, json=data, headers=headers)
+            if data is None:
+                response = await client.get(url, headers=headers)
+            else:
+                response = await client.post(url, json=data, headers=headers)
             response.raise_for_status()
             return response.json()

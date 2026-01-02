@@ -5,6 +5,7 @@ services:
     ports:
       - "8081:8080"
     environment:
+      - PYTHONUNBUFFERED=1
       - KEYCLOAK_URL=${KEYCLOAK_URL}
       - KEYCLOAK_REALM_NAME=${KEYCLOAK_REALM_NAME}
       - KEYCLOAK_CLIENT_ID=${KEYCLOAK_CLIENT_ID}
