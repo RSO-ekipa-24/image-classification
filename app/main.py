@@ -73,11 +73,12 @@ async def readiness(response: Response):
         except Exception:
             errors["keycloak"] = "unreachable"
 
-        # 2. Check File Service (where tags come from)
+        # 2. Check File Service health
         try:
-            tags_res = await client.get(os.getenv("FILE_SERVICE_TAGS_URL"), timeout=1.0)
-            if tags_res.status_code >= 400:
-                errors["file_service"] = f"unhealthy_status_{tags_res.status_code}"
+            fs_base = "http://files-service:8080"
+            fs_res = await client.get(f"{fs_base}/q/health/ready", timeout=1.0)
+            if fs_res.status_code != 200:
+                errors["file_service"] = f"unhealthy_{fs_res.status_code}"
         except Exception:
             errors["file_service"] = "unreachable"
 
