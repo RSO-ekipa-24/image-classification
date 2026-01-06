@@ -17,7 +17,7 @@ deployment:
 
 # Environment variables for the application
 keycloak:
-  url: http://keycloak-service:8080
+  url: https://keycloak.myproperty-essa.com
   realm: quarkus
   clientId: image-classification
 
