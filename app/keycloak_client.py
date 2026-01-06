@@ -3,7 +3,8 @@ import httpx
 import time
 
 class KeycloakClient:
-    def __init__(self, server_url, realm, client_id, client_secret):
+    def __init__(self, http_client, server_url, realm, client_id, client_secret):
+        self.http_client = http_client
         self.openid = KeycloakOpenID(
             server_url=server_url,
             realm_name=realm,
@@ -21,14 +22,13 @@ class KeycloakClient:
             self._token_expires_at = time.time() + token_response["expires_in"]
         return self._token
 
-    async def call_other_service(self, url, data):
+    async def call_other_service(self, url, params=None, data=None, timeout=5.0):
         token = await self.get_token()
         headers = {"Authorization": f"Bearer {token}"}
         
-        async with httpx.AsyncClient() as client:
-            if data is None:
-                response = await client.get(url, headers=headers)
-            else:
-                response = await client.post(url, json=data, headers=headers)
-            response.raise_for_status()
-            return response.json()
+        if data is None:
+            response = await self.http_client.get(url, params=params, headers=headers, timeout=timeout)
+        else:
+            response = await self.http_client.post(url, params=params, json=data, headers=headers, timeout=timeout)
+        response.raise_for_status()
+        return response.json()

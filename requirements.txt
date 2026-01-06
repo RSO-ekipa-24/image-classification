@@ -1,6 +1,6 @@
 fastapi
 uvicorn[standard]
-google-cloud-storage
+python-multipart
 numpy
 fastapi-keycloak-auth
 httpx
@@ -10,4 +10,3 @@ torch
 torchvision
 transformers
 Pillow
-python-keycloak

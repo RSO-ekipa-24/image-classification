@@ -36,13 +36,13 @@ spec:
             - containerPort: {{ .Values.deployment.image.containerPort }}
           env:
             - name: KEYCLOAK_URL
-              value: http://keycloak-service:8080
+              value: {{ .Values.keycloak.url }}
 
             - name: KEYCLOAK_REALM_NAME
-              value: quarkus
+              value: {{ .Values.keycloak.realm }}
 
             - name: KEYCLOAK_CLIENT_ID
-              value: quarkus
+              value: {{ .Values.keycloak.clientId }}
 
             - name: KEYCLOAK_CLIENT_SECRET
               valueFrom:
@@ -50,17 +50,8 @@ spec:
                   name: {{ .Values.secrets.name}}
                   key: {{ .Values.secrets.keycloakClientSecret}}
 
-            - name: KEYCLOAK_SERVICE_CLIENT_ID
-              value: image-classification
-
-            - name: KEYCLOAK_SERVICE_CLIENT_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.secrets.name}}
-                  key: {{ .Values.secrets.keycloakServiceClientSecret}}
-
-            - name: FILE_SERVICE_TAGS_URL
-              value: http://files-service:8080/tag/image-system
+            - name: FILE_SERVICE_URL
+              value: {{ .Values.fileServiceUrl }}
 
           # health checks
           livenessProbe:

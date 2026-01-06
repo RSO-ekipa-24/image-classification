@@ -10,14 +10,5 @@ services:
       - KEYCLOAK_REALM_NAME=${KEYCLOAK_REALM_NAME}
       - KEYCLOAK_CLIENT_ID=${KEYCLOAK_CLIENT_ID}
       - KEYCLOAK_CLIENT_SECRET=${KEYCLOAK_CLIENT_SECRET}
-      - KEYCLOAK_SERVICE_CLIENT_ID=${KEYCLOAK_SERVICE_CLIENT_ID}
-      - KEYCLOAK_SERVICE_CLIENT_SECRET=${KEYCLOAK_SERVICE_CLIENT_SECRET}
-      - FILE_SERVICE_TAGS_URL=${FILE_SERVICE_TAGS_URL}
-
-      # Tells the Google library to look at the path where we mounted the config
-      - GOOGLE_APPLICATION_CREDENTIALS=/root/.config/gcloud/application_default_credentials.json
-    volumes:
-      # Mount the gcloud config folder from your host (Mac/Linux path)
-      # For Windows, use: - ${APPDATA}/gcloud:/root/.config/gcloud:ro
-      - ~/.config/gcloud:/root/.config/gcloud:ro
+      - FILE_SERVICE_URL=${FILE_SERVICE_URL}
     restart: "no" #unless-stopped #CHAGE THIS
