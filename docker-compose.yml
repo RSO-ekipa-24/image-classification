@@ -11,4 +11,4 @@ services:
       - KEYCLOAK_CLIENT_ID=${KEYCLOAK_CLIENT_ID}
       - KEYCLOAK_CLIENT_SECRET=${KEYCLOAK_CLIENT_SECRET}
       - FILE_SERVICE_URL=${FILE_SERVICE_URL}
-    restart: "no" #unless-stopped #CHAGE THIS
+    restart: unless-stopped
