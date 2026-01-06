@@ -19,7 +19,7 @@ logging.getLogger("httpx").setLevel(logging.WARNING)
 
 class EndpointFilter(logging.Filter):
     def filter(self, record):
-        return "/health" not in record.getMessage() #and "/ready" not in record.getMessage()
+        return "/health" not in record.getMessage() and "/ready" not in record.getMessage()
 
 logging.getLogger("uvicorn.access").addFilter(EndpointFilter())
 
@@ -184,22 +184,13 @@ async def readiness(response: Response):
     if not keycloak_client:
         errors["keycloak"] = "client_not_initialized"
 
-    # Check external services
     try:
-        token = await keycloak_client.get_token()
+        fs_url = f"{os.getenv('FILE_SERVICE_URL')}/health"
+        # keycloak_client also checks connection to keycloak to fetch token
+        await keycloak_client.call_other_service(fs_url)
     except Exception as e:
-        logger.warning(f"Keycloak health check failed: {e}")
-        errors["keycloak"] = "unreachable"
-
-    if http_client:
-        try:
-            fs_url = f"{os.getenv('FILE_SERVICE_URL')}/health"
-            fs_res = await http_client.get(fs_url, timeout=1.0)
-            if fs_res.status_code != 200:
-                errors["file_service"] = f"unhealthy_{fs_res.status_code}"
-        except Exception as e:
-            logger.warning(f"File service health check failed: {e}")
-            errors["file_service"] = "unreachable"
+        logger.warning(f"File service health check failed: {e}")
+        errors["file_service"] = "unreachable"
 
     if errors:
         response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
