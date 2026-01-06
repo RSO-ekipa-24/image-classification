@@ -147,7 +147,6 @@ async def classify_file(file: UploadFile = File(...), user=Depends(get_current_u
         if not file.content_type or not file.content_type.startswith("image/"):
             raise HTTPException(status_code=400, detail="File must be an image")
         
-    
         image_bytes = await file.read()
 
         max_size = 10 * 1024 * 1024  # 10MB
@@ -185,7 +184,7 @@ async def readiness(response: Response):
         errors["keycloak"] = "client_not_initialized"
 
     try:
-        fs_url = f"{os.getenv('FILE_SERVICE_URL')}/health"
+        fs_url = f"{os.getenv('FILE_SERVICE_URL')}/q/health/ready"
         # keycloak_client also checks connection to keycloak to fetch token
         await keycloak_client.call_other_service(fs_url)
     except Exception as e:
