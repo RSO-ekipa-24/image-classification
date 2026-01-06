@@ -106,7 +106,7 @@ async def get_tags():
 
         if "Thumbnail" in fresh_tags: # Part of tags but not useful for classification
             fresh_tags.remove("Thumbnail")
-            
+
         return fresh_tags
     except httpx.HTTPError as e:
         logger.error(f"Failed to fetch tags: {e}")
@@ -183,20 +183,15 @@ async def readiness(response: Response):
     
     if not keycloak_client:
         errors["keycloak"] = "client_not_initialized"
-    
-    if not tags:
-        errors["internal_state"] = "tags_list_empty"
 
     # Check external services
-    if http_client:
-        try:
-            kc_res = await http_client.get(os.getenv("KEYCLOAK_URL"), timeout=1.0)
-            if kc_res.status_code >= 400:
-                errors["keycloak"] = f"unhealthy_status_{kc_res.status_code}"
-        except Exception as e:
-            logger.warning(f"Keycloak health check failed: {e}")
-            errors["keycloak"] = "unreachable"
+    try:
+        token = await keycloak_client.get_token()
+    except Exception as e:
+        logger.warning(f"Keycloak health check failed: {e}")
+        errors["keycloak"] = "unreachable"
 
+    if http_client:
         try:
             fs_url = f"{os.getenv('FILE_SERVICE_URL')}/health"
             fs_res = await http_client.get(fs_url, timeout=1.0)
@@ -210,4 +205,4 @@ async def readiness(response: Response):
         response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
         return {"status": "unready", "errors": errors}
 
-    return {"status": "ready", "tags_loaded": len(tags)}
+    return {"status": "ready"}
