@@ -19,7 +19,7 @@ logging.getLogger("httpx").setLevel(logging.WARNING)
 
 class EndpointFilter(logging.Filter):
     def filter(self, record):
-        return "/health" not in record.getMessage() and "/ready" not in record.getMessage()
+        return "/health" not in record.getMessage() #and "/ready" not in record.getMessage()
 
 logging.getLogger("uvicorn.access").addFilter(EndpointFilter())
 
