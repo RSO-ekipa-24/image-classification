@@ -165,6 +165,15 @@ async def classify_file(file: UploadFile = File(...), user=Depends(get_current_u
         return results
     finally:
         await file.close()
+
+@app.post("/classify-url")
+async def classify_url(image_url: str, user=Depends(get_current_user)):
+    """Classify an image from a given URL."""
+    require_roles(user, ["admin", "user", "system"])
+
+    image_bytes = await download_image_from_url(image_url)
+    results = await perfom_classification(image_bytes)
+    return results
         
 
 @app.get("/health", status_code=status.HTTP_200_OK)
