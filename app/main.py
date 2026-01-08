@@ -67,8 +67,10 @@ async def download_image_from_url(url: str) -> bytes:
         logger.error(f"Timeout downloading image from {url}")
         raise HTTPException(status_code=504, detail="Image download timeout")
     except httpx.HTTPStatusError as e:
-        logger.error(f"HTTP error downloading image: {e.response.status_code}")
-        raise HTTPException(status_code=502, detail=f"Failed to download image: {e.response.status_code}")
+        if e.response.status_code == 404:
+            raise HTTPException(status_code=404, detail="Image not found at URL")
+        logger.error(f"HTTP error downloading image: {e}")
+        raise HTTPException(status_code=e.response.status_code, detail=f"Failed to download image")
     except httpx.RequestError as e:
         logger.error(f"Request error downloading image: {e}")
         raise HTTPException(status_code=502, detail="Failed to download image")
@@ -90,7 +92,7 @@ async def get_image(uuid: str) -> bytes:
         if e.response.status_code == 404:
             raise HTTPException(status_code=404, detail=f"Image {uuid} not found")
         logger.error(f"File service error: {e.response.status_code}")
-        raise HTTPException(status_code=502, detail="File service error")
+        raise HTTPException(status_code=e.response.status_code, detail="File service error")
     except httpx.RequestError as e:
         logger.error(f"File service unreachable: {e}")
         raise HTTPException(status_code=502, detail="File service unavailable")
