@@ -1,46 +1,33 @@
-# Image Classification Service
+# Image Classification Service  
 
+## Overview
 A FastAPI service that classifies images stored in Google Cloud Storage using OpenAI's CLIP model. The service fetches available tags from file service and returns tags that fit the image.
+
+
+### Branching Strategy
+
+- main: The production-ready branch.
+- dev: The integration branch for features and fixes, often considered the "next release" branch.
+- feature/: Branches for developing new features. These branches are created from dev and merged back into dev when the feature is complete.
+- bugfix/: Branches for fixing bugs in the dev branch.
+- release/: Branches for preparing a new production release. These branches allow for last-minute fixes and preparing release notes.
+- hotfix/: Branches for fixing critical issues in the main branch. These are created from main and merged back into both main and dev.
+
+### Technology stack :computer:
+
+| Category                  | Technology / Tool |
+|----------------------------|-------------------|
+| Backend framework          | Python (FastAPI)  |
+| Containerization           | Docker            |
+| CI/CD Automation           | GitHub Actions    |
+
+---
 
 ## Prerequisites
 
 - Docker & Docker Compose
-- Google Cloud Project with Storage API enabled
 - Keycloak server configured
-- Service account with GCS read permissions
-
-## Google Cloud Setup
-
-### 1. Create a Service Account (if missing)
-
-```bash
-# Create service account
-gcloud iam service-accounts create image-classifier \
-    --display-name="Image Classification Service" \
-    --project=$PROJECT_ID
-
-# Grant Storage Object Viewer role
-gcloud projects add-iam-policy-binding $PROJECT_ID \
-    --member="serviceAccount:image-classifier@$PROJECT_ID.iam.gserviceaccount.com" \
-    --role="roles/storage.objectViewer"
-```
-
-### 2. Configure Service Account Impersonation
-
-```bash
-# Authenticate with your user account
-gcloud auth application-default login --impersonate-service-account=image-classifier@$PROJECT_ID.iam.gserviceaccount.com
-
-# Verify credentials are set 
-# Mac/Linux
-ls ~/.config/gcloud/application_default_credentials.json
-
-# Windows
-dir %APPDATA%\gcloud\application_default_credentials.json
-
-```
-
-**Note**: The Docker container mounts `~/.config/gcloud` to access these credentials.
+- File service deployed
 
 ## Environment Variables
 
@@ -67,7 +54,7 @@ Service pre-downloads the CLIP model during Docker build to avoid runtime delays
 docker-compose build --no-cache
 ```
 
-#### Build and push the image to Google Registry:
+## Build and push the image to Google Registry:
 
 
 First, you need to commit and push all the changes u made to Git!
@@ -92,3 +79,10 @@ docker build -f Dockerfile -t europe-central2-docker.pkg.dev/artful-reactor-3519
 docker push europe-central2-docker.pkg.dev/artful-reactor-351917/essa-images/image-classification-service:$GIT_HASH
 ```
 
+### Deploy via helm chart :arrow_up:
+
+Move to `image-classification/deploy/k8s/helm` and run:
+
+```bash
+helm upgrade --install image-classification-release ./image-classification --set deployment.image.tag=$GIT_HASH
+```

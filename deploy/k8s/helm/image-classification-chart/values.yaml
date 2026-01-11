@@ -15,7 +15,14 @@ deployment:
     pullPolicy: IfNotPresent
     containerPort: 8080
 
+# Environment variables for the application
+keycloak:
+  url: https://keycloak.myproperty-essa.com
+  realm: quarkus
+  clientId: image-classification
+
+fileServiceUrl: http://files-service:8080
+
 secrets:
   name: image-classification-secrets
   keycloakClientSecret: KEYCLOAK_CLIENT_SECRET
-  keycloakServiceClientSecret: KEYCLOAK_SERVICE_CLIENT_SECRET
