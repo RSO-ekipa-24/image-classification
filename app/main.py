@@ -51,7 +51,10 @@ async def lifespan(app: FastAPI):
         await http_client.aclose()
     logger.info("Bye bye!")
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(
+    title="Image Classification Service",
+    description="Generate tags for images using a pre-trained model.",
+    lifespan=lifespan)
 
 async def download_image_from_url(url: str) -> bytes:
     """Download image from given URL."""
@@ -131,7 +134,7 @@ async def perfom_classification(image_bytes: bytes):
         logger.error(f"Classification error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Classification failed")
 
-@app.post("/classify/{uuid}")
+@app.post("/classify/{uuid}", response_model=list[str])
 async def classify(uuid: str, user=Depends(get_current_user)):
     """Classify an image by UUID."""
     require_roles(user, ["admin", "user"])
@@ -140,7 +143,7 @@ async def classify(uuid: str, user=Depends(get_current_user)):
     results = await perfom_classification(image_bytes)
     return results
 
-@app.post("/classify-file")
+@app.post("/classify-file", response_model=list[str])
 async def classify_file(file: UploadFile = File(...), user=Depends(get_current_user)):
     """Classify an uploaded image file."""
     require_roles(user, ["admin", "user"])
@@ -168,7 +171,7 @@ async def classify_file(file: UploadFile = File(...), user=Depends(get_current_u
     finally:
         await file.close()
 
-@app.post("/classify-url")
+@app.post("/classify-url", response_model=list[str])
 async def classify_url(image_url: str, user=Depends(get_current_user)):
     """Classify an image from a given URL."""
     require_roles(user, ["admin", "user", "system"])
@@ -178,12 +181,12 @@ async def classify_url(image_url: str, user=Depends(get_current_user)):
     return results
         
 
-@app.get("/health", status_code=status.HTTP_200_OK)
+@app.get("/health", status_code=status.HTTP_200_OK, tags=["Health"])
 async def liveness():
     """Confirms the Python process is running."""
     return {"status": "ok"}
 
-@app.get("/ready")
+@app.get("/ready", tags=["Health"])
 async def readiness(response: Response):
     """Checks if Keycloak, File Service, and tags are ready."""
     errors = {}
